@@ -1,0 +1,125 @@
+# Production stack. See docs/DEPLOY_KIMSUFI.md before running this.
+services:
+  caddy:
+    image: caddy:2-alpine
+    restart: unless-stopped
+    ports:
+      - "80:80"
+      - "443:443"
+      - "443:443/udp"
+    volumes:
+      - ./Caddyfile:/etc/caddy/Caddyfile:ro
+      - caddy_data:/data
+      - caddy_config:/config
+    environment:
+      BASE_DOMAIN: ${BASE_DOMAIN:?set BASE_DOMAIN in .env}
+      ACME_EMAIL: ${ACME_EMAIL:?set ACME_EMAIL in .env}
+    depends_on:
+      - app
+    networks:
+      - edge
+
+  app:
+    build: .
+    restart: unless-stopped
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql+asyncpg://agentspace:${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}@postgres:5432/agentspace
+      DATA_ROOT: /data/workspaces
+      # No Docker socket here. Sandbox operations go to the broker, which is the
+      # only service holding it — see the `broker` service below.
+      SANDBOX_DRIVER: remote
+      SANDBOX_BROKER_URL: http://broker:9000
+      SANDBOX_BROKER_TOKEN: ${SANDBOX_BROKER_TOKEN:?set SANDBOX_BROKER_TOKEN in .env}
+      # The entrypoint migrates once before uvicorn forks its workers; letting
+      # each worker do it too would have them racing on the same revision.
+      AUTO_MIGRATE: "false"
+    volumes:
+      # Read and written directly for file operations and static hosting. The
+      # app needs the bytes; it does not need the ability to mount them anywhere.
+      - ${HOST_DATA_ROOT:?set HOST_DATA_ROOT in .env}:/data/workspaces
+    depends_on:
+      postgres:
+        condition: service_healthy
+      broker:
+        condition: service_started
+    networks:
+      - edge
+      - internal
+
+  # The privileged half. Holds the Docker socket so the control plane does not:
+  # a bug in a request handler up there costs a sandbox, not the host.
+  broker:
+    build: .
+    restart: unless-stopped
+    command:
+      ["uvicorn", "app.broker:app", "--host", "0.0.0.0", "--port", "9000"]
+    entrypoint: []          # no migrations here; the broker owns no schema
+    # Deliberately NOT `env_file: .env`. This is the most privileged service in
+    # the stack; handing it the database password, the session key and the
+    # Stripe key would mean a bug here leaks everything the boundary exists to
+    # protect. Every variable it needs is listed, and nothing else arrives.
+    environment:
+      DATA_ROOT: /data/workspaces
+      SANDBOX_DRIVER: docker
+      SANDBOX_IMAGE: ${SANDBOX_IMAGE:-agentspace/runtime:latest}
+      SANDBOX_NETWORK: agentspace_sandbox
+      SANDBOX_RUNTIME: ${SANDBOX_RUNTIME:-runsc}
+      SANDBOX_REQUIRE_RUNTIME: ${SANDBOX_REQUIRE_RUNTIME:-true}
+      SANDBOX_ALLOW_EGRESS: ${SANDBOX_ALLOW_EGRESS:-false}
+      SANDBOX_REQUIRE_ROOTLESS: ${SANDBOX_REQUIRE_ROOTLESS:-false}
+      SANDBOX_BROKER_TOKEN: ${SANDBOX_BROKER_TOKEN:?set SANDBOX_BROKER_TOKEN in .env}
+      BROKER_MAX_MEMORY_MB: ${BROKER_MAX_MEMORY_MB:-8192}
+      BROKER_MAX_CPUS: ${BROKER_MAX_CPUS:-8}
+      BROKER_MAX_TIMEOUT_S: ${BROKER_MAX_TIMEOUT_S:-1800}
+    # Defence in depth. None of this stops socket abuse — that is what rootless
+    # Docker is for — but it raises the cost of every other bug in this service.
+    read_only: true
+    tmpfs:
+      - /tmp:rw,noexec,nosuid,size=32m
+    cap_drop: ["ALL"]
+    security_opt: ["no-new-privileges:true"]
+    volumes:
+      # Sandbox mounts are resolved by the daemon on the host, so this path must
+      # be identical here and there. See HOST_DATA_ROOT.
+      - ${HOST_DATA_ROOT:?set HOST_DATA_ROOT in .env}:/data/workspaces
+      - /var/run/docker.sock:/var/run/docker.sock
+    # Deliberately no `ports:`. Reachable only from the internal network, and
+    # publishing it would hand the host to anyone who found the port.
+    networks:
+      - internal
+      - sandbox
+
+  postgres:
+    image: postgres:16-alpine
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: agentspace
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:?set POSTGRES_PASSWORD in .env}
+      POSTGRES_DB: agentspace
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U agentspace"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    networks:
+      - edge
+
+networks:
+  edge:
+  # Carries only control-plane-to-broker traffic. Separate from `edge` so the
+  # broker is not reachable from anything that faces the internet.
+  internal:
+    internal: true
+  sandbox:
+    name: agentspace_sandbox
+    # No route off the host: user services can be reached by the proxy but
+    # cannot reach the internet or the rest of the stack.
+    internal: true
+
+volumes:
+  caddy_data:
+  caddy_config:
+  pgdata:

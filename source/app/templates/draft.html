@@ -1,0 +1,38 @@
+{% extends "base.html" %}
+{% block title %}Confirm — AgentSpace{% endblock %}
+{% block content %}
+
+<section class="publish">
+  <h1>A page is waiting</h1>
+  <p class="lede">
+    Your chatbot staged this. Nothing is on the web until you publish it.
+  </p>
+
+  <div class="preview-frame">
+    {# Sandboxed with no allow-same-origin: this is unreviewed content that
+       arrived over a URL, and the preview must not be able to act as you. #}
+    <iframe title="Preview" sandbox srcdoc="{{ content }}"></iframe>
+  </div>
+
+  <form method="post" action="/d/{{ draft_id }}/publish">
+    <div class="publish-row">
+      <input type="text" name="name" value="{{ filename }}">
+      <button class="btn" type="submit">Publish it</button>
+    </div>
+    <p class="muted small">
+      {{ (bytes / 1024) | round(1) }} KB. It will be at
+      <code>{{ would_be }}</code>
+    </p>
+  </form>
+
+  <form method="post" action="/d/{{ draft_id }}/discard">
+    <button class="btn ghost tiny" type="submit">Discard it</button>
+  </form>
+
+  <details class="rest">
+    <summary>Look at the source first</summary>
+    <pre class="draft-source">{{ content }}</pre>
+  </details>
+</section>
+
+{% endblock %}

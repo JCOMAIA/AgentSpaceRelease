@@ -1,0 +1,41 @@
+{% extends "base.html" %}
+{% block title %}Log in — AgentSpace{% endblock %}
+{% block content %}
+<section class="form-page">
+  <h1>Log in</h1>
+  <form id="login-form">
+    <label>Email
+      <input name="email" type="email" required autocomplete="username">
+    </label>
+    <label>Password
+      <input name="password" type="password" required autocomplete="current-password">
+    </label>
+    <button class="btn big" type="submit">Log in</button>
+    <p class="error" id="error" hidden></p>
+  </form>
+  <p class="small">No account? <a href="/register">Get a space</a>.</p>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const form = document.getElementById('login-form');
+const errorBox = document.getElementById('error');
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  errorBox.hidden = true;
+  const res = await fetch('/api/v1/account/login', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({email: form.email.value.trim(), password: form.password.value}),
+  });
+  const payload = await res.json();
+  if (!res.ok) {
+    errorBox.textContent = payload.error?.message || 'Login failed';
+    errorBox.hidden = false;
+    return;
+  }
+  location.href = '/dashboard';
+});
+</script>
+{% endblock %}

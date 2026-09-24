@@ -1,0 +1,56 @@
+{% extends "base.html" %}
+{% block title %}It is live — AgentSpace{% endblock %}
+{% block content %}
+
+<section class="published">
+  <h1>{% if replaced %}Updated{% else %}It is live{% endif %}</h1>
+  {% if note %}<p class="muted small">{{ note }}</p>{% endif %}
+
+  <p class="live-url">
+    <a href="{{ url }}" target="_blank" rel="noopener">{{ url }}</a>
+  </p>
+  <div class="publish-row">
+    <button class="btn" type="button" id="copy-url">Copy the link</button>
+    <a class="btn ghost" href="{{ url }}" target="_blank" rel="noopener">Open it</a>
+    <a class="btn ghost" href="{{ edit_url }}">Edit it</a>
+    <a class="btn ghost" href="/publish">Publish another</a>
+  </div>
+
+  <p class="muted small">
+    {% if replaced %}
+      Replaced <code>public/{{ filename }}</code>, so anyone holding this link sees
+      the new version.
+    {% else %}
+      Saved as <code>public/{{ filename }}</code>. Paste that link anywhere — whoever
+      opens it needs no account.
+    {% endif %}
+    Everything you have made is on <a href="{{ profile }}">your profile</a>.
+  </p>
+
+  <p class="muted small">
+    To change it, use <a href="{{ edit_url }}">Edit</a> — it keeps the same file name,
+    so this link never goes stale. Pasting a new answer at /publish makes a
+    <em>separate</em> page whenever the title has drifted.
+  </p>
+
+  {% if others %}
+    <details class="rest">
+      <summary>Your other pages ({{ others | length }})</summary>
+      <ul>
+        {% for p in others %}
+          <li><a href="{{ p.url }}">{{ p.filename }}</a>
+            <a class="muted small" href="/edit?path=public/{{ p.filename }}">edit</a></li>
+        {% endfor %}
+      </ul>
+    </details>
+  {% endif %}
+</section>
+
+<script>
+document.getElementById('copy-url')?.addEventListener('click', async (e) => {
+  await navigator.clipboard.writeText({{ url | tojson }});
+  e.target.textContent = 'Copied';
+});
+</script>
+
+{% endblock %}

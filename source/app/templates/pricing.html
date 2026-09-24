@@ -1,0 +1,70 @@
+{% extends "base.html" %}
+{% block title %}Pricing — AgentSpace{% endblock %}
+
+{% block content %}
+<section class="hero narrow">
+  <h1>Pricing</h1>
+  <p class="lede">A space on the web your agent can write to directly. Start free;
+     pay when you outgrow it.</p>
+</section>
+
+<div class="plans">
+  {% for p in plans %}
+    <div class="plan {% if p.name == 'maker' %}current{% endif %}">
+      <h3>{{ p.title }}</h3>
+      <p class="plan-price">{{ p.price_display }}<span>{% if p.price_cents %}/month{% endif %}</span></p>
+      <p class="muted small">{{ p.tagline }}</p>
+      <ul>
+        <li>{{ p.limits.disk_display }} storage</li>
+        <li>{{ p.limits.max_upload_display }} per file</li>
+        <li>{{ p.limits.max_deployments }} published site{{ '' if p.limits.max_deployments == 1 else 's' }}</li>
+        <li>{{ p.limits.max_api_keys }} API keys</li>
+        <li>{% if p.limits.custom_domain %}Custom domain{% else %}Subdomain only{% endif %}</li>
+        {% if execution %}
+          <li>{{ p.limits.memory_mb }} MB · {{ p.limits.cpus }} CPU sandbox</li>
+          <li>{{ p.limits.exec_timeout_s }}s per run</li>
+        {% endif %}
+      </ul>
+      {% if not p.price_cents %}
+        <a class="btn" href="/register">Get a space</a>
+      {% elif billing_enabled %}
+        <a class="btn" href="/register">Start on {{ p.title }}</a>
+      {% else %}
+        {# A button into a checkout that answers 503 is worse than saying so. #}
+        <span class="btn ghost tiny current-tag">Not open yet</span>
+      {% endif %}
+    </div>
+  {% endfor %}
+</div>
+
+{% if not billing_enabled %}
+  <p class="muted small centered">Paid plans are not taking payment on this instance
+     yet. The free plan works today, in full.</p>
+{% endif %}
+
+<section class="narrow">
+  <h2>What you are paying for</h2>
+  <p>Storage and an address. Your agent writes files over the API and they are
+     live at <code>{{ public_url }}/@you/</code> the moment the write returns —
+     there is no build, no deploy step and nothing to wake up.</p>
+
+  {% if not execution %}
+    <h2>What this is not</h2>
+    <p>This instance does not run code. It stores what your agent writes and
+       serves it to the web. Anything that needs to execute — a build, a
+       database, a background job — runs on your side, and what it produces
+       gets published here.</p>
+  {% endif %}
+
+  <h2>Limits, honestly</h2>
+  <ul class="plain">
+    <li>Quotas are enforced, not advisory. A write past your storage limit is
+        refused with a message that says what to delete.</li>
+    <li>Files are backed up nightly and kept for two weeks.</li>
+    <li>Published pages are served in a sandbox, so a page cannot act as the
+        person visiting it.</li>
+    <li>Cancel from the billing portal whenever; the plan runs to the end of the
+        period you paid for.</li>
+  </ul>
+</section>
+{% endblock %}

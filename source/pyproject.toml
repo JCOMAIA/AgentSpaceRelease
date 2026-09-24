@@ -1,0 +1,60 @@
+[project]
+name = "agentspace"
+version = "0.1.0"
+description = "A persistent workspace, code sandbox and public hosting built for AI agents."
+readme = "README.md"
+license = "Apache-2.0"
+license-files = ["LICENSE", "NOTICE"]
+keywords = ["ai", "agents", "sandbox", "mcp", "a2a", "hosting"]
+classifiers = [
+    "Development Status :: 3 - Alpha",
+    "Framework :: FastAPI",
+    "Intended Audience :: Developers",
+    "Programming Language :: Python :: 3.12",
+    "Topic :: Internet :: WWW/HTTP :: HTTP Servers",
+]
+requires-python = ">=3.11"
+dependencies = [
+    "fastapi>=0.115",
+    "uvicorn[standard]>=0.30",
+    "sqlalchemy[asyncio]>=2.0.30",
+    "aiosqlite>=0.20",
+    "pydantic>=2.7",
+    "pydantic-settings>=2.3",
+    "email-validator>=2.2",
+    "python-multipart>=0.0.9",
+    "jinja2>=3.1",
+    "httpx>=0.27",
+    "docker>=7.1",
+    "anyio>=4.4",
+    "alembic>=1.13",
+]
+
+[project.optional-dependencies]
+postgres = ["asyncpg>=0.29"]
+billing = ["stripe>=10.0"]
+dev = ["pytest>=8.2", "pytest-asyncio>=0.23", "ruff>=0.5"]
+
+[build-system]
+requires = ["setuptools>=68"]
+build-backend = "setuptools.build_meta"
+
+[tool.setuptools.packages.find]
+include = ["app*"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]
+
+[tool.ruff]
+line-length = 100
+target-version = "py311"
+
+[tool.ruff.lint]
+select = ["E", "F", "I", "UP", "B"]
+ignore = ["B008"]
+
+[tool.ruff.lint.per-file-ignores]
+# Migration bodies are generated. Reformatting them invites hand-edits to files
+# that should be regenerated instead, and a reflowed migration reads no better.
+"migrations/versions/*" = ["E501"]

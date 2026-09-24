@@ -1,0 +1,121 @@
+{% extends "base.html" %}
+{% block content %}
+
+<section class="hero">
+  {% if execution %}
+    <h1>A space your agents can actually live in.</h1>
+    <p class="lede">
+      Files that survive the session. A sandbox to run code against them.
+      A URL to publish the result. One API key opens all three doors —
+      REST, MCP and A2A — onto the same space.
+    </p>
+  {% else %}
+    <h1>Your agent makes something. It is live at a URL.</h1>
+    <p class="lede">
+      Files that survive the session, and a public address for anything you put
+      in <code>public/</code> — live the moment it is written, with no deploy
+      step. One API key opens all three doors — REST, MCP and A2A — onto the
+      same space.
+    </p>
+  {% endif %}
+  {% if single_user %}
+    <div class="cta">
+      <a class="btn big" href="/dashboard">Open the dashboard</a>
+      <a class="btn ghost big" href="/llms.txt">Read the agent manual</a>
+    </div>
+    <p class="fineprint">
+      This is a personal instance — one owner, no signup. Your API key was written to
+      <code>owner-credentials.txt</code> when the server first started.
+    </p>
+  {% else %}
+    <div class="cta">
+      <a class="btn big" href="/register">Get a free space</a>
+      <a class="btn ghost big" href="/llms.txt">Read the agent manual</a>
+    </div>
+    {% if execution %}
+      <p class="fineprint">Free tier: 1&nbsp;GB storage · 512&nbsp;MB sandbox · 2 deployments · no card.</p>
+    {% else %}
+      <p class="fineprint">
+        Free: 1&nbsp;GB storage · your own address · no card. This space publishes
+        files; it does not run code on the server.
+      </p>
+    {% endif %}
+  {% endif %}
+</section>
+
+<section class="doors">
+  <h2>Three doors, one space</h2>
+  <div class="grid">
+    <article>
+      <h3>REST</h3>
+      <p>For any agent that can make an HTTP call.</p>
+<pre><code>curl {{ public_url }}/api/v1/whoami \
+  -H "Authorization: Bearer ask_..."</code></pre>
+    </article>
+    <article>
+      <h3>MCP</h3>
+      <p>Streamable HTTP. Drop the URL into your client and the tools appear.</p>
+<pre><code>{
+  "mcpServers": {
+    "agentspace": {
+      "url": "{{ public_url }}/mcp",
+      "headers": {"Authorization": "Bearer ask_..."}
+    }
+  }
+}</code></pre>
+    </article>
+    <article>
+      <h3>A2A</h3>
+      <p>A published agent card so peer agents can discover and delegate.</p>
+<pre><code>GET {{ public_url }}/.well-known/agent-card.json</code></pre>
+    </article>
+  </div>
+</section>
+
+<section class="teach">
+  <h2>The space teaches itself</h2>
+  <p>
+    An agent should not need documentation it was never given. Every response
+    carries a <code>guide</code>: where you are, and the exact call that comes next.
+    Every error carries a <code>fix</code>.
+  </p>
+<pre class="wide"><code>{
+  "ok": true,
+  "data": { "path": "index.html", "size": 34 },
+  "guide": {
+    "you_are_here": "Wrote 34 bytes to 'index.html'.",
+    "next_steps": [{
+      "do": "Publish the directory containing this file as a website",
+      "why": "You just wrote HTML — it can be public in one call.",
+      "call": {"method": "POST", "path": "/api/v1/deployments",
+               "body": {"name": "site", "kind": "static", "source_dir": "."}}
+    }]
+  }
+}</code></pre>
+</section>
+
+<section class="caps">
+  <h2>What an agent can do here</h2>
+  <table>
+    <tbody>
+    {% for c in capabilities %}
+      <tr>
+        <td class="cap-title">{{ c.title }}</td>
+        <td>{{ c.description }}</td>
+        <td><code>{{ c.rest }}</code></td>
+      </tr>
+    {% endfor %}
+    </tbody>
+  </table>
+</section>
+
+<section class="urls">
+  <h2>Your work gets a real address</h2>
+  <ul class="url-list">
+    <li><code>{{ public_url }}/@<b>yourname</b>/</code> <span>always available</span></li>
+    <li><code>https://<b>yourname</b>.{{ base_domain }}/</code> <span>wildcard subdomain</span></li>
+    <li><code>https://<b>your-own-domain.com</b>/</code> <span>CNAME, TLS issued automatically</span></li>
+  </ul>
+</section>
+
+{% endblock %}

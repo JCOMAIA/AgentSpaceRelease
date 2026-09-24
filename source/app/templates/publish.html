@@ -1,0 +1,66 @@
+{% extends "base.html" %}
+{% block title %}Publish — AgentSpace{% endblock %}
+{% block content %}
+
+<section class="publish">
+  <h1>Publish a page</h1>
+  <p class="lede">
+    Ask any chatbot for a page, copy its whole answer, and drop it here. The page
+    is picked out of the reply for you — code fence, chatter and all.
+  </p>
+
+  <form method="post" action="/publish">
+    <textarea name="pasted" rows="16" required
+      placeholder="Paste the chatbot's answer here.&#10;&#10;It can include &quot;here you go!&quot;, ```html fences, explanations — whatever it sent you."></textarea>
+    <div class="publish-row">
+      <input type="text" name="name" placeholder="file name (optional — taken from the title)">
+      <button class="btn" type="submit">Publish</button>
+    </div>
+  </form>
+
+  <details class="agent-mode">
+    <summary>Let the chatbot publish it itself</summary>
+    <p class="muted small">
+      If your chatbot can open URLs, it can stage the page on its own and hand you
+      a link to confirm. Nothing goes live until you click Publish — a link that
+      published by itself would fire from chat previews and browser prefetch.
+    </p>
+    <button class="btn ghost" type="button" id="mint">Generate a token to paste</button>
+    <div id="token-out" hidden>
+      <p class="muted small">Paste this into the chat, then ask for the page you want:</p>
+      <pre id="token-text"></pre>
+      <button class="btn tiny" type="button" id="copy">Copy</button>
+    </div>
+  </details>
+
+  {% if drafts %}
+    <h2>Waiting for you</h2>
+    <ul class="draft-list">
+      {% for d in drafts %}
+        <li>
+          <a href="/d/{{ d.id }}">{{ d.name }}</a>
+          <span class="muted small">{{ (d.bytes / 1024) | round(1) }} KB</span>
+          <form method="post" action="/d/{{ d.id }}/discard" style="display:inline">
+            <button class="btn tiny ghost" type="submit">Discard</button>
+          </form>
+        </li>
+      {% endfor %}
+    </ul>
+  {% endif %}
+</section>
+
+<script>
+document.getElementById('mint')?.addEventListener('click', async () => {
+  const res = await fetch('/publish/token');
+  const body = await res.json();
+  if (!body.ok) return;
+  document.getElementById('token-text').textContent = body.data.instructions;
+  document.getElementById('token-out').hidden = false;
+});
+document.getElementById('copy')?.addEventListener('click', async (e) => {
+  await navigator.clipboard.writeText(document.getElementById('token-text').textContent);
+  e.target.textContent = 'Copied';
+});
+</script>
+
+{% endblock %}

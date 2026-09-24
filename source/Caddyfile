@@ -1,0 +1,48 @@
+{
+	email {$ACME_EMAIL}
+
+	# Custom domains get certificates on first request, but only after the app
+	# confirms the hostname actually belongs to an account. Without this gate a
+	# stranger's DNS record could burn our Let's Encrypt rate limit.
+	on_demand_tls {
+		ask http://app:8000/internal/tls-check
+		interval 2m
+		burst 5
+	}
+}
+
+# Apex: the marketing site, the API, MCP, A2A and the dashboard.
+{$BASE_DOMAIN} {
+	encode zstd gzip
+	reverse_proxy app:8000
+}
+
+# Wildcard for user subdomains: alice.example.com
+#
+# Requires a DNS-01 challenge, which means a Caddy build that includes your DNS
+# provider's plugin. Replace the `tls` block below with your provider, e.g.
+#
+#   tls {
+#     dns cloudflare {env.CLOUDFLARE_API_TOKEN}
+#   }
+#
+# and build the image with:
+#   xcaddy build --with github.com/caddy-dns/cloudflare
+#
+# Until then, comment this block out — path mode (/u/username) works without it.
+*.{$BASE_DOMAIN} {
+	encode zstd gzip
+	tls {
+		dns {$DNS_PROVIDER} {$DNS_API_TOKEN}
+	}
+	reverse_proxy app:8000
+}
+
+# Everything else: customer-owned domains pointed here by CNAME.
+:443 {
+	tls {
+		on_demand
+	}
+	encode zstd gzip
+	reverse_proxy app:8000
+}

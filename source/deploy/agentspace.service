@@ -1,0 +1,73 @@
+# /etc/systemd/system/agentspace.service
+#
+# A publish-only space. There is no sandbox here, so the isolation that matters
+# is the one around this process itself: it should be able to touch its own data
+# directory and nothing else on the machine.
+#
+#   sudo systemctl daemon-reload
+#   sudo systemctl enable --now agentspace
+#   journalctl -u agentspace -f
+
+[Unit]
+Description=AgentSpace (publish-only)
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=exec
+User=agentspace
+Group=agentspace
+WorkingDirectory=/srv/agentspace
+EnvironmentFile=/srv/agentspace/.env
+
+# Migrations run here, once, before the server starts. Doing it in the app means
+# every worker races to apply the same revision.
+ExecStartPre=/srv/agentspace/.venv/bin/alembic upgrade head
+
+# One worker on purpose. The rate limiter counts in memory, and SQLite does not
+# enjoy several writers; a second worker would silently double every limit and
+# add write contention for no gain, since Cloudflare serves the cached pages.
+# Scale by moving to Postgres first, then adding workers.
+ExecStart=/srv/agentspace/.venv/bin/uvicorn app.main:app \
+    --host 127.0.0.1 \
+    --port 8000 \
+    --proxy-headers \
+    --forwarded-allow-ips 127.0.0.1,::1
+
+Restart=always
+RestartSec=3
+KillSignal=SIGINT
+TimeoutStopSec=30
+
+# --- containment -----------------------------------------------------------
+# The app writes to exactly one place. Everything else on the filesystem is
+# read-only or invisible to it, so a path bug cannot become a host compromise.
+NoNewPrivileges=true
+PrivateTmp=true
+PrivateDevices=true
+ProtectSystem=strict
+ProtectHome=true
+ReadWritePaths=/srv/agentspace/data
+ProtectKernelTunables=true
+ProtectKernelModules=true
+ProtectKernelLogs=true
+ProtectControlGroups=true
+ProtectClock=true
+ProtectHostname=true
+ProtectProc=invisible
+RestrictSUIDSGID=true
+RestrictRealtime=true
+RestrictNamespaces=true
+LockPersonality=true
+MemoryDenyWriteExecute=false
+RestrictAddressFamilies=AF_INET AF_INET6 AF_UNIX
+SystemCallFilter=@system-service
+SystemCallErrorNumber=EPERM
+UMask=0077
+
+# A runaway request handler should cost this service, not the box.
+MemoryMax=2G
+TasksMax=512
+
+[Install]
+WantedBy=multi-user.target

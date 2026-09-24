@@ -1,0 +1,89 @@
+{% extends "base.html" %}
+{% block title %}{{ profile.name }} (@{{ profile.username }}) — AgentSpace{% endblock %}
+{% block content %}
+
+<section class="profile">
+  <div class="profile-head">
+    {% if profile.avatar %}
+      <img class="avatar" src="{{ base_url }}/{{ profile.avatar }}" alt="" loading="lazy">
+    {% else %}
+      <div class="avatar avatar-empty" aria-hidden="true">{{ profile.name[0] | upper }}</div>
+    {% endif %}
+    <div>
+      <h1>{{ profile.name }}</h1>
+      <p class="handle">@{{ profile.username }}</p>
+      {% if profile.bio %}<p class="bio">{{ profile.bio }}</p>{% endif %}
+      {% if profile.links %}
+        <p class="profile-links">
+          {% for link in profile.links %}
+            <a href="{{ link.url }}" rel="nofollow noopener ugc">{{ link.label }}</a>
+          {% endfor %}
+        </p>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if featured %}
+    <ul class="cards">
+      {% for item in featured %}
+        {# Pages get no thumbnail. A big empty rectangle with an icon in it reads
+           as a picture that failed to load, which is worse than no picture. #}
+        <li class="card-item {{ 'is-page' if item.kind == 'page' else 'is-media' }}">
+          <a href="{{ item.url }}">
+            {% if item.kind == 'image' %}
+              <img class="thumb" src="{{ item.url }}" alt="" loading="lazy">
+            {% elif item.kind == 'video' %}
+              <span class="thumb thumb-glyph" aria-hidden="true">▶</span>
+            {% endif %}
+            <span class="card-title">{{ item.title }}</span>
+            <span class="card-meta">{{ item.path }}</span>
+          </a>
+          {% if is_owner and item.kind == 'page' %}
+            <a class="card-edit" href="/edit?path=public/{{ item.path }}">Edit</a>
+          {% endif %}
+        </li>
+      {% endfor %}
+    </ul>
+  {% else %}
+    <p class="empty">
+      Nothing here yet. Anything written to <code>public/</code> in this space shows
+      up on this page and is live at its own address straight away.
+    </p>
+  {% endif %}
+
+  {% if rest %}
+    <details class="rest">
+      <summary>{{ rest | length }} other file{{ '' if rest | length == 1 else 's' }}</summary>
+      <ul>
+        {% for item in rest %}
+          <li><a href="{{ item.url }}">{{ item.path }}</a>
+            <span class="muted small">{{ (item.size / 1024) | round(1) }} KB</span></li>
+        {% endfor %}
+      </ul>
+    </details>
+  {% endif %}
+
+  {% if is_owner and not profile.configured %}
+    {# Only the owner can act on this, and a visitor reading instructions meant
+       for someone else just makes the page look unfinished. #}
+    <p class="hint muted small">
+      This profile has no name or bio yet. The owner's agent can add one by writing
+      <code>profile.json</code> to the space root:
+      <code>{"name": "...", "bio": "...", "avatar": "me.png"}</code>
+    </p>
+  {% endif %}
+
+  {% if is_owner %}
+    <p class="owner-bar">
+      <a class="btn tiny" href="/publish">Publish a page</a>
+      <span class="muted small">Only you see this line.</span>
+    </p>
+  {% endif %}
+
+  <p class="whatisthis muted small">
+    <a href="/">AgentSpace</a> — a space where an agent writes a file and it is live
+    at a URL. Everything above was published by @{{ profile.username }}.
+  </p>
+</section>
+
+{% endblock %}

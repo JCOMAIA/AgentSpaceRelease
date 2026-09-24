@@ -1,0 +1,259 @@
+:root {
+  --bg: #ffffff;
+  --fg: #16181d;
+  --muted: #6b7280;
+  --line: #e5e7eb;
+  --accent: #2563eb;
+  --on-accent: #fff;
+  --code-bg: #f6f7f9;
+  --card: #fbfbfc;
+}
+@media (prefers-color-scheme: dark) {
+  :root {
+    --bg: #0e1014;
+    --fg: #e8eaed;
+    --muted: #9aa1ab;
+    --line: #262a31;
+    --accent: #7aa7ff;
+    --code-bg: #171a20;
+    --card: #14171c;
+    --on-accent: #0e1014;
+  }
+}
+
+* { box-sizing: border-box; }
+body {
+  margin: 0;
+  background: var(--bg);
+  color: var(--fg);
+  font: 16px/1.65 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+  -webkit-font-smoothing: antialiased;
+}
+a { color: var(--accent); text-decoration: none; }
+a:hover { text-decoration: underline; }
+code, pre { font-family: ui-monospace, SFMono-Regular, "SF Mono", Menlo, monospace; }
+code { background: var(--code-bg); padding: .12em .38em; border-radius: 4px; font-size: .89em; }
+pre {
+  background: var(--code-bg);
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  padding: 1rem;
+  overflow-x: auto;
+  font-size: .84rem;
+  line-height: 1.5;
+}
+pre code { background: none; padding: 0; font-size: inherit; }
+
+/* nav */
+.nav {
+  display: flex; justify-content: space-between; align-items: center;
+  gap: 1rem; flex-wrap: wrap;
+  padding: 1.1rem clamp(1rem, 5vw, 3rem);
+  border-bottom: 1px solid var(--line);
+}
+.brand { font-weight: 650; color: var(--fg); letter-spacing: -.01em; }
+.brand .mark { color: var(--accent); }
+.nav nav { display: flex; gap: 1.25rem; align-items: center; flex-wrap: wrap; }
+.nav nav a { color: var(--muted); font-size: .92rem; }
+.nav nav a:hover { color: var(--fg); }
+/* `.nav nav a` outranks `.btn`, so without this the call to action in the header
+   renders muted grey on the accent fill — unreadable, and on every page. */
+.nav nav a.btn { color: var(--on-accent); }
+.nav nav a.btn:hover { color: var(--on-accent); }
+
+main { max-width: 60rem; margin: 0 auto; padding: 0 clamp(1rem, 5vw, 3rem) 5rem; }
+
+/* buttons */
+.btn {
+  display: inline-block; background: var(--accent); color: var(--on-accent);
+  padding: .5rem 1rem; border-radius: 7px; border: 1px solid transparent;
+  font-size: .92rem; font-weight: 500; cursor: pointer;
+}
+.btn:hover { text-decoration: none; filter: brightness(1.08); }
+.btn.big { padding: .7rem 1.4rem; font-size: 1rem; }
+.btn.tiny { padding: .25rem .6rem; font-size: .8rem; }
+.btn.ghost { background: transparent; color: var(--fg); border-color: var(--line); }
+
+/* hero */
+.hero { padding: 4.5rem 0 3rem; }
+.hero h1 {
+  font-size: clamp(2rem, 5.5vw, 3.1rem); line-height: 1.1;
+  letter-spacing: -.03em; margin: 0 0 1.1rem; max-width: 18ch;
+}
+.lede { font-size: 1.13rem; color: var(--muted); max-width: 54ch; margin: 0 0 1.8rem; }
+.lede.small { font-size: 1rem; }
+.cta { display: flex; gap: .75rem; flex-wrap: wrap; }
+.fineprint { color: var(--muted); font-size: .87rem; margin-top: 1.5rem; }
+
+section { margin-top: 4rem; }
+section h2 {
+  font-size: 1.35rem; letter-spacing: -.02em; margin: 0 0 1.2rem;
+  padding-bottom: .5rem; border-bottom: 1px solid var(--line);
+}
+
+.grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(16rem, 1fr)); gap: 1.2rem; }
+.grid article h3 { margin: 0 0 .3rem; font-size: 1rem; }
+.grid article p { color: var(--muted); font-size: .92rem; margin: 0 0 .7rem; }
+.grid article pre { font-size: .74rem; }
+
+.teach p { color: var(--muted); max-width: 60ch; }
+pre.wide { margin-top: 1.2rem; }
+
+/* tables */
+table { width: 100%; border-collapse: collapse; font-size: .9rem; }
+td, th { padding: .6rem .5rem; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+th { color: var(--muted); font-weight: 500; white-space: nowrap; }
+.cap-title { font-weight: 550; white-space: nowrap; }
+.caps td:nth-child(2) { color: var(--muted); }
+.caps td:last-child { white-space: nowrap; }
+.endpoints code { font-size: .82rem; }
+
+.url-list { list-style: none; padding: 0; }
+.url-list li { padding: .55rem 0; border-bottom: 1px solid var(--line); display: flex;
+  justify-content: space-between; gap: 1rem; flex-wrap: wrap; }
+.url-list span { color: var(--muted); font-size: .84rem; }
+
+/* forms */
+.form-page { max-width: 26rem; margin: 4rem auto; }
+.form-page h1 { font-size: 1.7rem; letter-spacing: -.02em; margin-bottom: .5rem; }
+form label { display: block; margin-bottom: 1.1rem; font-size: .9rem; font-weight: 500; }
+form input {
+  display: block; width: 100%; margin-top: .35rem; padding: .6rem .7rem;
+  border: 1px solid var(--line); border-radius: 7px; font-size: 1rem;
+  background: var(--bg); color: var(--fg);
+}
+form input:focus { outline: 2px solid var(--accent); outline-offset: -1px; border-color: transparent; }
+form small { color: var(--muted); font-size: .8rem; font-family: ui-monospace, monospace; }
+form.inline { display: flex; gap: .5rem; margin-bottom: 1rem; }
+form.inline input { margin-top: 0; }
+.error { color: #dc2626; font-size: .9rem; }
+@media (prefers-color-scheme: dark) { .error { color: #f87171; } }
+.small { font-size: .9rem; }
+.muted { color: var(--muted); }
+
+pre.key { background: var(--code-bg); word-break: break-all; white-space: pre-wrap; }
+
+/* dashboard */
+.dash h1 { font-size: 1.8rem; letter-spacing: -.02em; margin-bottom: .2rem; }
+.cards { display: grid; grid-template-columns: repeat(auto-fit, minmax(9.5rem, 1fr)); gap: .9rem;
+  margin: 2rem 0; }
+.card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 1rem; }
+.card h3 { margin: 0 0 .4rem; font-size: .78rem; color: var(--muted); font-weight: 500;
+  text-transform: uppercase; letter-spacing: .04em; }
+.big-num { font-size: 1.5rem; font-weight: 600; margin: 0; letter-spacing: -.02em; }
+.card .muted { font-size: .82rem; margin: .1rem 0 0; }
+.keys tr.revoked { opacity: .45; }
+
+/* plans */
+.plan-row { display: flex; justify-content: space-between; align-items: flex-start;
+  gap: 1rem; flex-wrap: wrap; margin-bottom: 1.4rem; }
+.plan-now { margin: 0; font-size: 1.1rem; }
+.plan-now .muted { font-weight: 400; font-size: .9rem; }
+.warn { color: #b45309; font-size: .88rem; margin: .35rem 0 0; }
+@media (prefers-color-scheme: dark) { .warn { color: #fbbf24; } }
+
+.plans { display: grid; grid-template-columns: repeat(auto-fit, minmax(13rem, 1fr));
+  gap: .9rem; margin-bottom: 1rem; }
+.plan { background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+  padding: 1.1rem; display: flex; flex-direction: column; }
+.plan.current { border-color: var(--accent); }
+.plan h3 { margin: 0 0 .2rem; font-size: 1rem; }
+.plan-price { font-size: 1.6rem; font-weight: 600; margin: 0 0 .1rem; letter-spacing: -.02em; }
+.plan-price span { font-size: .8rem; font-weight: 400; color: var(--muted); }
+.plan ul { list-style: none; padding: 0; margin: .8rem 0 1rem; font-size: .85rem;
+  color: var(--muted); flex: 1; }
+.plan li { padding: .2rem 0; border-bottom: 1px solid var(--line); }
+.plan li:last-child { border-bottom: 0; }
+.plan .btn { width: 100%; text-align: center; }
+.current-tag { cursor: default; opacity: .7; }
+.snippet { margin: 1.5rem 0; }
+.snippet summary { cursor: pointer; color: var(--muted); font-size: .9rem; }
+
+footer {
+  border-top: 1px solid var(--line); padding: 1.5rem clamp(1rem, 5vw, 3rem);
+  color: var(--muted); font-size: .85rem;
+}
+footer a { color: var(--muted); }
+
+/* ---- profile: what a stranger sees when they follow a shared link -------- */
+.profile { max-width: 52rem; margin: 0 auto; }
+.profile-head { display: flex; gap: 1.2rem; align-items: flex-start; margin: 0 0 2rem; }
+.profile-head h1 { margin: 0; font-size: 1.6rem; letter-spacing: -.02em; }
+.avatar { width: 5rem; height: 5rem; border-radius: 50%; object-fit: cover;
+  border: 1px solid var(--line); flex: none; background: var(--card); }
+.avatar-empty { display: grid; place-items: center; font-size: 2rem; font-weight: 600;
+  color: var(--muted); }
+.handle { margin: .1rem 0 0; color: var(--muted); font-size: .95rem; }
+.bio { margin: .6rem 0 0; max-width: 34rem; }
+.profile-links { margin: .6rem 0 0; display: flex; gap: .8rem; flex-wrap: wrap;
+  font-size: .9rem; }
+
+.card-item { list-style: none; }
+.card-item > a:not(.card-edit) { display: flex; flex-direction: column; gap: .35rem; text-decoration: none;
+  background: var(--card); border: 1px solid var(--line); border-radius: 10px;
+  padding: .75rem; color: var(--fg); height: 100%; }
+/* A page has no picture, so the title carries the card instead of sitting under
+   an empty box that looks like a broken image. */
+.card-item.is-page > a:not(.card-edit) { justify-content: center; padding: 1rem .9rem; min-height: 5.5rem;
+  border-left: 3px solid var(--accent); }
+.card-item.is-page > a .card-title { font-size: 1rem; }
+.card-item > a:not(.card-edit):hover { border-color: var(--accent); }
+.thumb { display: block; width: 100%; aspect-ratio: 16 / 10; object-fit: cover;
+  border-radius: 6px; background: var(--code-bg); }
+.thumb-glyph { display: grid; place-items: center; color: var(--muted); font-size: 1.4rem; }
+.card-title { font-size: .92rem; font-weight: 500; line-height: 1.3;
+  overflow-wrap: anywhere; }
+.card-meta { font-size: .75rem; color: var(--muted); overflow-wrap: anywhere; }
+
+.profile .empty { color: var(--muted); background: var(--card); border: 1px solid var(--line);
+  border-radius: 10px; padding: 1.2rem; }
+.rest { margin: 1.5rem 0 0; }
+.rest summary { cursor: pointer; color: var(--muted); font-size: .9rem; }
+.rest ul { list-style: none; padding: .6rem 0 0; margin: 0; font-size: .88rem; }
+.rest li { padding: .2rem 0; }
+.hint { margin-top: 1.5rem; }
+.whatisthis { margin-top: 2.5rem; padding-top: 1rem; border-top: 1px solid var(--line); }
+
+/* ---- publish: the way in for a chatbot that cannot make requests --------- */
+.publish, .published { max-width: 46rem; margin: 0 auto; }
+.publish textarea { width: 100%; font: 13px/1.6 ui-monospace, monospace; padding: .9rem;
+  border: 1px solid var(--line); border-radius: 10px; background: var(--code-bg);
+  color: var(--fg); resize: vertical; }
+.publish-row { display: flex; gap: .6rem; align-items: center; margin: .8rem 0;
+  flex-wrap: wrap; }
+.publish-row input[type=text] { flex: 1; min-width: 12rem; padding: .55rem .7rem;
+  border: 1px solid var(--line); border-radius: 8px; background: var(--bg);
+  color: var(--fg); font-size: .92rem; }
+.agent-mode { margin: 2rem 0; padding-top: 1rem; border-top: 1px solid var(--line); }
+.agent-mode summary { cursor: pointer; color: var(--muted); font-size: .92rem; }
+.agent-mode pre { white-space: pre-wrap; word-break: break-all; background: var(--code-bg);
+  border: 1px solid var(--line); border-radius: 8px; padding: .8rem; font-size: .8rem; }
+.draft-list { list-style: none; padding: 0; }
+.draft-list li { display: flex; gap: .8rem; align-items: center; padding: .4rem 0;
+  border-bottom: 1px solid var(--line); }
+
+.live-url { font-size: 1.05rem; word-break: break-all; margin: 1rem 0; }
+.preview-frame { border: 1px solid var(--line); border-radius: 10px; overflow: hidden;
+  background: #fff; margin: 1rem 0; }
+.preview-frame iframe { display: block; width: 100%; height: 22rem; border: 0; }
+.draft-source { white-space: pre-wrap; word-break: break-word; background: var(--code-bg);
+  border: 1px solid var(--line); border-radius: 8px; padding: .8rem; font-size: .78rem;
+  max-height: 24rem; overflow: auto; }
+.card-item { position: relative; }
+/* The card's own layout rules exclude this link by selector rather than by
+   specificity — chasing specificity loses to the next rule that adds a class. */
+.card-item a.card-edit { position: absolute; top: .4rem; right: .4rem; display: inline-block;
+  font-size: .7rem; line-height: 1.4; padding: .12rem .45rem; border-radius: 6px;
+  background: var(--bg); border: 1px solid var(--line); color: var(--muted);
+  text-decoration: none; }
+.card-item a.card-edit:hover { color: var(--fg); border-color: var(--accent); }
+.owner-bar { display: flex; gap: .8rem; align-items: center; margin-top: 2rem; }
+
+/* --- pricing ---------------------------------------------------------- */
+/* Long prose next to a card grid: the grid sets the page width, so text
+   without a measure of its own runs to 1100px and stops being readable. */
+.narrow { max-width: 42rem; }
+.centered { text-align: center; }
+.plain { list-style: none; padding: 0; }
+.plain li { padding: .45rem 0; border-bottom: 1px solid var(--line); }
+.plain li:last-child { border-bottom: 0; }

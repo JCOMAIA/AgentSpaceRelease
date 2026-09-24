@@ -1,0 +1,49 @@
+{% extends "base.html" %}
+{% block title %}Edit {{ filename }} — AgentSpace{% endblock %}
+{% block content %}
+
+<section class="publish">
+  <h1>Edit {{ filename }}</h1>
+  {% if url %}
+    <p class="lede">
+      This is what is live at <a href="{{ url }}" target="_blank" rel="noopener">{{ url }}</a>.
+      Saving replaces it in place, so the link you already shared keeps working.
+    </p>
+  {% else %}
+    <p class="lede">This file is not under <code>public/</code>, so it is not on the web.</p>
+  {% endif %}
+
+  <form method="post" action="/edit">
+    <input type="hidden" name="path" value="{{ path }}">
+    <textarea name="content" rows="20" spellcheck="false">{{ content }}</textarea>
+    <div class="publish-row">
+      <button class="btn" type="submit">Save</button>
+      <button class="btn ghost" type="button" id="copy-source">Copy the source</button>
+      {% if url %}
+        <a class="btn ghost" href="{{ url }}" target="_blank" rel="noopener">Open the page</a>
+      {% endif %}
+    </div>
+  </form>
+
+  <p class="muted small">
+    To have a chatbot change it: copy the source above, paste it into the chat with
+    what you want different, then paste its answer back here and save. The file name
+    never moves, so you never end up with two versions and a link pointing at the
+    wrong one.
+  </p>
+
+  <form method="post" action="/edit/delete"
+        onsubmit="return confirm('Delete {{ filename }}? The link stops working.')">
+    <input type="hidden" name="path" value="{{ path }}">
+    <button class="btn ghost tiny" type="submit">Delete this page</button>
+  </form>
+</section>
+
+<script>
+document.getElementById('copy-source')?.addEventListener('click', async (e) => {
+  await navigator.clipboard.writeText(document.querySelector('textarea[name=content]').value);
+  e.target.textContent = 'Copied';
+});
+</script>
+
+{% endblock %}

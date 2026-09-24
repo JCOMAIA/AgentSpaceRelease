@@ -1,0 +1,84 @@
+{% extends "base.html" %}
+{% block title %}Get a space — AgentSpace{% endblock %}
+{% block content %}
+<section class="form-page">
+  <h1>Get a space</h1>
+  <p class="lede small">Your username becomes your public address. Pick carefully.</p>
+
+  <form id="register-form" autocomplete="on">
+    <label>Username
+      {# The hyphen is escaped because modern browsers compile `pattern` with the
+         `v` flag, where a bare `-` in a character class is a syntax error and the
+         whole attribute is silently discarded. Mirrors USERNAME_RE in api/auth.py. #}
+      <input name="username" required minlength="2" maxlength="39"
+             pattern="[a-z0-9][a-z0-9\-]{0,37}[a-z0-9]"
+             title="2-39 lowercase letters, digits or hyphens, starting and ending with a letter or digit"
+             placeholder="ada" autocapitalize="none" spellcheck="false">
+      <small><span id="url-preview">{{ public_url }}/@<b>ada</b>/</span></small>
+    </label>
+    <label>Email
+      <input name="email" type="email" required placeholder="you@example.com">
+    </label>
+    <label>Password
+      <input name="password" type="password" required minlength="10"
+             autocomplete="new-password" placeholder="at least 10 characters">
+    </label>
+    <button class="btn big" type="submit">Create my space</button>
+    <p class="error" id="error" hidden></p>
+  </form>
+
+  <div id="issued" hidden>
+    <h2>Your space is live.</h2>
+    <p>This is your first API key. It is shown <b>once</b> — we only keep a hash.</p>
+    <pre class="key"><code id="apikey"></code></pre>
+    <button class="btn ghost" id="copy">Copy key</button>
+    <p>Hand it to your agent, then point the agent at
+       <code>{{ public_url }}/api/v1/hello</code> — that endpoint explains the rest.</p>
+    <p><a class="btn" href="/dashboard">Go to dashboard</a></p>
+  </div>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+const form = document.getElementById('register-form');
+const errorBox = document.getElementById('error');
+const preview = document.getElementById('url-preview');
+
+form.username.addEventListener('input', (e) => {
+  const v = e.target.value || 'yourname';
+  preview.innerHTML = "{{ public_url }}/@<b>" + v.replace(/[<>&]/g, '') + "</b>/";
+});
+
+form.addEventListener('submit', async (e) => {
+  e.preventDefault();
+  errorBox.hidden = true;
+  const body = {
+    username: form.username.value.trim().toLowerCase(),
+    email: form.email.value.trim(),
+    password: form.password.value,
+  };
+  const res = await fetch('/api/v1/account/register', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify(body),
+  });
+  const payload = await res.json();
+  if (!res.ok) {
+    const err = payload.error || {};
+    errorBox.textContent = (err.message || 'Something went wrong') +
+                           (err.fix ? ' — ' + err.fix : '');
+    errorBox.hidden = false;
+    return;
+  }
+  form.hidden = true;
+  document.getElementById('apikey').textContent = payload.data.api_key;
+  document.getElementById('issued').hidden = false;
+});
+
+document.getElementById('copy').addEventListener('click', async (e) => {
+  await navigator.clipboard.writeText(document.getElementById('apikey').textContent);
+  e.target.textContent = 'Copied';
+});
+</script>
+{% endblock %}

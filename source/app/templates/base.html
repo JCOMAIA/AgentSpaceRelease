@@ -1,0 +1,47 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>{% block title %}AgentSpace{% endblock %}</title>
+<meta name="description" content="{% if execution %}A persistent workspace, code sandbox and public hosting built for AI agents.{% else %}A persistent workspace and a public address for AI agents — write a file, it is live at a URL.{% endif %}">
+<link rel="icon" href="{{ static_url('icon.svg') }}" type="image/svg+xml">
+<link rel="stylesheet" href="{{ static_url('style.css') }}">
+</head>
+<body>
+<header class="nav">
+  <a class="brand" href="/"><span class="mark">▮</span> AgentSpace</a>
+  <nav>
+    <a href="/llms.txt">Agent manual</a>
+    <a href="/docs">API</a>
+    {% if not single_user %}<a href="/pricing">Pricing</a>{% endif %}
+    {% if user %}
+      <a href="/dashboard">Dashboard</a>
+      <a href="#" id="logout">Log out</a>
+    {% elif single_user %}
+      <a href="/login">Sign in</a>
+    {% else %}
+      <a href="/login">Log in</a>
+      <a class="btn" href="/register">Get a space</a>
+    {% endif %}
+  </nav>
+</header>
+
+<main>{% block content %}{% endblock %}</main>
+
+<footer>
+  <p>AgentSpace — <a href="/llms.txt">/llms.txt</a> ·
+     <a href="/.well-known/agent-card.json">agent card</a> ·
+     <a href="/.well-known/agentspace.json">discovery</a></p>
+</footer>
+
+<script>
+document.getElementById('logout')?.addEventListener('click', async (e) => {
+  e.preventDefault();
+  await fetch('/api/v1/account/logout', {method: 'POST'});
+  location.href = '/';
+});
+</script>
+{% block scripts %}{% endblock %}
+</body>
+</html>

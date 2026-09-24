@@ -1,0 +1,210 @@
+{% extends "base.html" %}
+{% block title %}Dashboard — AgentSpace{% endblock %}
+{% block content %}
+<section class="dash">
+  <h1>{{ user.username }}</h1>
+  <p class="lede small">Plan <b>{{ usage.plan }}</b></p>
+
+  <div class="cards">
+    <div class="card">
+      <h3>Storage</h3>
+      <p class="big-num">{{ (usage.disk.used_bytes / 1048576) | round(1) }} MB</p>
+      <p class="muted">of {{ (usage.disk.limit_bytes / 1048576) | round(0) | int }} MB</p>
+    </div>
+    <div class="card">
+      <h3>Deployments</h3>
+      <p class="big-num">{{ usage.deployments.used }}</p>
+      <p class="muted">of {{ usage.deployments.limit }}</p>
+    </div>
+    {% if execution %}
+      <div class="card">
+        <h3>Compute (30d)</h3>
+        <p class="big-num">{{ usage.exec_seconds_30d.used | round(0) | int }}s</p>
+        <p class="muted">of {{ usage.exec_seconds_30d.limit }}s</p>
+      </div>
+      <div class="card">
+        <h3>Sandbox</h3>
+        <p class="big-num">{{ usage.sandbox.memory_mb }} MB</p>
+        <p class="muted">{{ usage.sandbox.cpus }} CPU · {{ usage.sandbox.timeout_s }}s cap</p>
+      </div>
+    {% endif %}
+  </div>
+
+  <h2>Plan</h2>
+  <div class="plan-row">
+    <div>
+      <p class="plan-now"><b>{{ billing.plan.title }}</b>
+        {%- if billing.plan.price_cents %}
+        <span class="muted">{{ billing.plan.price_display }}/month</span>
+        {%- endif %}
+      </p>
+      {% if billing.status == 'past_due' %}
+        <p class="warn">Your last payment failed. Update the card to avoid losing the plan.</p>
+      {% elif billing.cancel_at_period_end %}
+        <p class="muted small">Cancels at the end of the current period. Access continues until then.</p>
+      {% endif %}
+    </div>
+    <div class="plan-actions">
+      {% if billing.has_billing_account %}
+        <button class="btn ghost" id="portal">Manage billing</button>
+      {% endif %}
+    </div>
+  </div>
+
+  {% if billing.enabled %}
+  <div class="plans">
+    {% for p in plans %}
+      <div class="plan {% if p.name == billing.plan.name %}current{% endif %}">
+        <h3>{{ p.title }}</h3>
+        <p class="plan-price">{{ p.price_display }}<span>{% if p.price_cents %}/mo{% endif %}</span></p>
+        <p class="muted small">{{ p.tagline }}</p>
+        <ul>
+          <li>{{ p.limits.disk_display }} storage</li>
+          <li>{{ p.limits.max_upload_display }} per file</li>
+          <li>{{ p.limits.max_deployments }} published site{{ '' if p.limits.max_deployments == 1 else 's' }}</li>
+          <li>{{ p.limits.max_api_keys }} API keys</li>
+          <li>{% if p.limits.custom_domain %}Custom domain{% else %}Subdomain only{% endif %}</li>
+          {% if execution %}
+            <li>{{ p.limits.memory_mb }} MB · {{ p.limits.cpus }} CPU sandbox</li>
+            <li>{{ p.limits.exec_timeout_s }}s per run</li>
+            <li>{% if p.limits.services_sleep_after_minutes == 0 %}Services never sleep
+                {% else %}Sleeps after {{ p.limits.services_sleep_after_minutes }} min idle{% endif %}</li>
+          {% endif %}
+        </ul>
+        {% if p.name == billing.plan.name %}
+          <span class="btn ghost tiny current-tag">Current</span>
+        {% elif p.price_cents %}
+          <button class="btn" data-plan="{{ p.name }}">Choose {{ p.title }}</button>
+        {% endif %}
+      </div>
+    {% endfor %}
+  </div>
+  {% else %}
+    <p class="muted small">Paid plans are not configured on this instance.</p>
+  {% endif %}
+
+  <h2>Give this to your agent</h2>
+  <table class="endpoints">
+    <tr><th>REST</th><td><code>{{ public_url }}/api/v1</code></td></tr>
+    <tr><th>MCP</th><td><code>{{ public_url }}/mcp</code></td></tr>
+    <tr><th>A2A card</th><td><code>{{ public_url }}/.well-known/agent-card.json</code></td></tr>
+    <tr><th>Manual</th><td><code>{{ public_url }}/llms.txt</code></td></tr>
+    <tr><th>Your site</th><td><a href="{{ urls.path }}"><code>{{ urls.path }}</code></a></td></tr>
+    <tr><th>Subdomain</th><td><code>{{ urls.subdomain }}</code></td></tr>
+  </table>
+
+  <details class="snippet">
+    <summary>MCP client config</summary>
+<pre><code>{
+  "mcpServers": {
+    "agentspace": {
+      "url": "{{ public_url }}/mcp",
+      "headers": { "Authorization": "Bearer &lt;your key&gt;" }
+    }
+  }
+}</code></pre>
+  </details>
+
+  <h2>API keys</h2>
+  <form id="new-key" class="inline">
+    <input name="name" placeholder="key name, e.g. research-agent" maxlength="64">
+    <button class="btn" type="submit">Create key</button>
+  </form>
+  <pre class="key" id="fresh-key" hidden><code></code></pre>
+  <table id="keys" class="keys"><tbody></tbody></table>
+
+  <h2>Deployments</h2>
+  <table id="deployments" class="keys"><tbody></tbody></table>
+</section>
+{% endblock %}
+
+{% block scripts %}
+<script>
+async function api(path, options) {
+  const res = await fetch(path, options);
+  return {ok: res.ok, payload: await res.json()};
+}
+
+function esc(s) {
+  return String(s ?? '').replace(/[&<>"']/g, c =>
+    ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]));
+}
+
+async function loadKeys() {
+  const {payload} = await api('/api/v1/account/keys');
+  const rows = (payload.data?.keys || []).map(k => `
+    <tr class="${k.active ? '' : 'revoked'}">
+      <td><b>${esc(k.name)}</b><br><code class="muted">ask_${esc(k.prefix)}_…</code></td>
+      <td class="muted">${k.last_used_at ? 'used ' + esc(k.last_used_at.slice(0,10)) : 'never used'}</td>
+      <td>${k.active ? `<button data-revoke="${esc(k.id)}" class="btn tiny ghost">Revoke</button>` : '<span class="muted">revoked</span>'}</td>
+    </tr>`).join('');
+  document.querySelector('#keys tbody').innerHTML = rows ||
+    '<tr><td class="muted">No keys yet.</td></tr>';
+
+  document.querySelectorAll('[data-revoke]').forEach(btn => {
+    btn.addEventListener('click', async () => {
+      if (!confirm('Revoke this key? Agents using it will stop working immediately.')) return;
+      await api('/api/v1/account/keys/' + btn.dataset.revoke, {method: 'DELETE'});
+      loadKeys();
+    });
+  });
+}
+
+async function loadDeployments() {
+  const {payload} = await api('/api/v1/deployments');
+  const rows = (payload.data?.deployments || []).map(d => `
+    <tr>
+      <td><b>${esc(d.name)}</b> <span class="muted">${esc(d.kind)}</span></td>
+      <td><a href="${esc(d.urls.path)}"><code>${esc(d.urls.path)}</code></a></td>
+      <td class="muted">${esc(d.status)}</td>
+    </tr>`).join('');
+  document.querySelector('#deployments tbody').innerHTML = rows ||
+    '<tr><td class="muted">Nothing published yet — your agent can publish with POST /api/v1/deployments.</td></tr>';
+}
+
+document.getElementById('new-key').addEventListener('submit', async (e) => {
+  e.preventDefault();
+  const {ok, payload} = await api('/api/v1/account/keys', {
+    method: 'POST',
+    headers: {'Content-Type': 'application/json'},
+    body: JSON.stringify({name: e.target.name.value.trim() || 'default'}),
+  });
+  if (!ok) { alert(payload.error?.message + ' — ' + payload.error?.fix); return; }
+  const box = document.getElementById('fresh-key');
+  box.querySelector('code').textContent = payload.data.api_key;
+  box.hidden = false;
+  e.target.reset();
+  loadKeys();
+});
+
+document.querySelectorAll('[data-plan]').forEach(btn => {
+  btn.addEventListener('click', async () => {
+    btn.disabled = true;
+    btn.textContent = 'Opening checkout…';
+    const {ok, payload} = await api('/api/v1/billing/checkout', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({plan: btn.dataset.plan}),
+    });
+    if (!ok) {
+      alert((payload.error?.message || 'Could not start checkout') +
+            (payload.error?.fix ? '\n\n' + payload.error.fix : ''));
+      btn.disabled = false;
+      btn.textContent = 'Choose ' + btn.dataset.plan;
+      return;
+    }
+    location.href = payload.data.checkout_url;
+  });
+});
+
+document.getElementById('portal')?.addEventListener('click', async (e) => {
+  e.target.disabled = true;
+  const {ok, payload} = await api('/api/v1/billing/portal', {method: 'POST'});
+  if (!ok) { alert(payload.error?.message); e.target.disabled = false; return; }
+  location.href = payload.data.portal_url;
+});
+
+loadKeys();
+loadDeployments();
+</script>
+{% endblock %}
