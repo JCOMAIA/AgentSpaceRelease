@@ -72,7 +72,7 @@ agent that has never seen this API can finish a task from the error messages.
 
 ## Install
 
-**By an agent, end to end** — hand it [`ForLLMInstall.md`](ForLLMInstall.md).
+**By an agent, end to end** — hand it [`ForLLMInstall.md`][(ForLLMInstall.md](https://github.com/JCOMAIA/AgentSpaceRelease/blob/main/source/ForLLMInstall.md)).
 It picks the shape, detects Docker, writes the `.env`, runs the migrations and
 prints the API key with an MCP snippet ready to paste.
 
@@ -88,7 +88,7 @@ cp .env.example .env            # set SECRET_KEY; SANDBOX_DRIVER=none to start
 **Docker** — `docker compose up`, which runs migrations once in the entrypoint
 rather than racing them across workers.
 
-For a public box, [`docs/DEPLOY_VPS.md`](docs/DEPLOY_VPS.md) covers a hardened
+For a public box, [`docs/DEPLOY_VPS.md`]([docs/DEPLOY_VPS.md](https://github.com/JCOMAIA/AgentSpaceRelease/blob/main/source/docs/DEPLOY_VPS.md)) covers a hardened
 systemd unit, nightly hard-linked backups and TLS.
 
 ## Tested
