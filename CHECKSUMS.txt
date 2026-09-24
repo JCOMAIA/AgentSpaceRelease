@@ -1,0 +1,2 @@
+bfeeb4eac0c22c3370adc675133a4db0f88d1360084de3c78d2f2f2673f4deca *agentspace-0.1.0.tar.gz
+c790ed735a5855608e73b698b4fd8a5c5e3cab7805289e50b9c7c7e505239d18 *agentspace-0.1.0.zip
